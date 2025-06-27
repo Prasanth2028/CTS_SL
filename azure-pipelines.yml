@@ -11,23 +11,16 @@ pool:
 
 steps:
 - task: AzureCLI@2
-  displayName: 'Azure Login'
+  displayName: 'Terraform Init and Plan'
   inputs:
     azureSubscription: 'ADO'
     scriptType: 'bash'
     scriptLocation: 'inlineScript'
     inlineScript: |
       echo 'Logged in to Azure'
-
-- script: |
-    curl -sLo terraform.zip https://releases.hashicorp.com/terraform/1.8.5/terraform_1.8.5_linux_amd64.zip
-    unzip terraform.zip
-    sudo mv terraform /usr/local/bin/
-    terraform -version
-  displayName: 'Install Terraform'
-
-- script: terraform init
-  displayName: 'Terraform Init'
-
-- script: terraform plan
-  displayName: 'Terraform Plan'
+      curl -sLo terraform.zip https://releases.hashicorp.com/terraform/1.8.5/terraform_1.8.5_linux_amd64.zip
+      unzip terraform.zip
+      sudo mv terraform /usr/local/bin/
+      terraform -version
+      terraform init
+      terraform plan
