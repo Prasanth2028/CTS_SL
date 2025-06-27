@@ -9,18 +9,58 @@ trigger:
 pool:
   vmImage: ubuntu-latest
 
-steps:
-- task: AzureCLI@2
+jobs:
+- job: TerraformInitPlan
   displayName: 'Terraform Init and Plan'
-  inputs:
-    azureSubscription: 'ADO'
-    scriptType: 'bash'
-    scriptLocation: 'inlineScript'
-    inlineScript: |
-      echo 'Logged in to Azure'
-      curl -sLo terraform.zip https://releases.hashicorp.com/terraform/1.8.5/terraform_1.8.5_linux_amd64.zip
-      unzip terraform.zip
-      sudo mv terraform /usr/local/bin/
-      terraform -version
-      terraform init
-      terraform plan
+  steps:
+    - task: AzureCLI@2
+      displayName: 'Terraform Init'
+      inputs:
+        azureSubscription: 'ADO'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          curl -sLo terraform.zip https://releases.hashicorp.com/terraform/1.8.5/terraform_1.8.5_linux_amd64.zip
+          unzip terraform.zip
+          sudo mv terraform /usr/local/bin/
+          terraform -version
+          terraform init
+    - task: AzureCLI@2
+      displayName: 'Terraform Plan'
+      inputs:
+        azureSubscription: 'ADO'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          curl -sLo terraform.zip https://releases.hashicorp.com/terraform/1.8.5/terraform_1.8.5_linux_amd64.zip
+          unzip terraform.zip
+          sudo mv terraform /usr/local/bin/
+          terraform -version
+          terraform plan
+
+- deployment: WaitForApproval
+  displayName: 'Approval Before Apply'
+  environment: 'Approvals'
+  strategy:
+    runOnce:
+      deploy:
+        steps:
+          - script: echo "Waiting for approval before proceeding to Terraform Apply"
+            displayName: 'Approval Step'
+
+- job: TerraformApply
+  displayName: 'Terraform Apply'
+  dependsOn: WaitForApproval
+  steps:
+    - task: AzureCLI@2
+      displayName: 'Terraform Apply'
+      inputs:
+        azureSubscription: 'ADO'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          curl -sLo terraform.zip https://releases.hashicorp.com/terraform/1.8.5/terraform_1.8.5_linux_amd64.zip
+          unzip terraform.zip
+          sudo mv terraform /usr/local/bin/
+          terraform -version
+          terraform apply -auto-approve

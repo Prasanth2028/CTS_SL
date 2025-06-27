@@ -4,6 +4,7 @@ provider "azurerm" {
 }
 
 resource "azurerm_resource_group" "example" {
-  name     = "RG-01"
+  count    = 2
+  name     = "RG-0${count.index + 1}"
   location = "East US"
 }
