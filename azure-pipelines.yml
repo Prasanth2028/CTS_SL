@@ -10,10 +10,24 @@ pool:
   vmImage: ubuntu-latest
 
 steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
+- task: AzureCLI@2
+  displayName: 'Azure Login'
+  inputs:
+    azureSubscription: 'ADO'
+    scriptType: 'bash'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
+      echo 'Logged in to Azure'
 
 - script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+    curl -sLo terraform.zip https://releases.hashicorp.com/terraform/1.8.5/terraform_1.8.5_linux_amd64.zip
+    unzip terraform.zip
+    sudo mv terraform /usr/local/bin/
+    terraform -version
+  displayName: 'Install Terraform'
+
+- script: terraform init
+  displayName: 'Terraform Init'
+
+- script: terraform plan
+  displayName: 'Terraform Plan'
