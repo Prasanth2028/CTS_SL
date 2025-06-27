@@ -9,58 +9,64 @@ trigger:
 pool:
   vmImage: ubuntu-latest
 
-jobs:
-- job: TerraformInitPlan
-  displayName: 'Terraform Init and Plan'
-  steps:
-    - task: AzureCLI@2
-      displayName: 'Terraform Init'
-      inputs:
-        azureSubscription: 'ADO'
-        scriptType: 'bash'
-        scriptLocation: 'inlineScript'
-        inlineScript: |
-          curl -sLo terraform.zip https://releases.hashicorp.com/terraform/1.8.5/terraform_1.8.5_linux_amd64.zip
-          unzip terraform.zip
-          sudo mv terraform /usr/local/bin/
-          terraform -version
-          terraform init
-    - task: AzureCLI@2
-      displayName: 'Terraform Plan'
-      inputs:
-        azureSubscription: 'ADO'
-        scriptType: 'bash'
-        scriptLocation: 'inlineScript'
-        inlineScript: |
-          curl -sLo terraform.zip https://releases.hashicorp.com/terraform/1.8.5/terraform_1.8.5_linux_amd64.zip
-          unzip terraform.zip
-          sudo mv terraform /usr/local/bin/
-          terraform -version
-          terraform plan
+stages:
+- stage: Init
+  displayName: 'Terraform Init'
+  jobs:
+    - job: TerraformInit
+      steps:
+        - task: AzureCLI@2
+          displayName: 'Terraform Init'
+          inputs:
+            azureSubscription: 'ADO'
+            scriptType: 'bash'
+            scriptLocation: 'inlineScript'
+            inlineScript: |
+              terraform -version
+              terraform init
 
-- deployment: WaitForApproval
-  displayName: 'Approval Before Apply'
-  environment: 'Approvals'
-  strategy:
-    runOnce:
-      deploy:
-        steps:
-          - script: echo "Waiting for approval before proceeding to Terraform Apply"
-            displayName: 'Approval Step'
+- stage: Plan
+  displayName: 'Terraform Plan'
+  dependsOn: Init
+  jobs:
+    - job: TerraformPlan
+      steps:
+        - task: AzureCLI@2
+          displayName: 'Terraform Plan'
+          inputs:
+            azureSubscription: 'ADO'
+            scriptType: 'bash'
+            scriptLocation: 'inlineScript'
+            inlineScript: |
+              terraform -version
+              terraform plan
 
-- job: TerraformApply
+- stage: Approval
+  displayName: 'Manual Approval'
+  dependsOn: Plan
+  jobs:
+    - deployment: WaitForApproval
+      displayName: 'Approval Before Apply'
+      environment: 'Approvals'
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+              - script: echo "Waiting for approval before proceeding to Terraform Apply"
+                displayName: 'Approval Step'
+
+- stage: Apply
   displayName: 'Terraform Apply'
-  dependsOn: WaitForApproval
-  steps:
-    - task: AzureCLI@2
-      displayName: 'Terraform Apply'
-      inputs:
-        azureSubscription: 'ADO'
-        scriptType: 'bash'
-        scriptLocation: 'inlineScript'
-        inlineScript: |
-          curl -sLo terraform.zip https://releases.hashicorp.com/terraform/1.8.5/terraform_1.8.5_linux_amd64.zip
-          unzip terraform.zip
-          sudo mv terraform /usr/local/bin/
-          terraform -version
-          terraform apply -auto-approve
+  dependsOn: Approval
+  jobs:
+    - job: TerraformApply
+      steps:
+        - task: AzureCLI@2
+          displayName: 'Terraform Apply'
+          inputs:
+            azureSubscription: 'ADO'
+            scriptType: 'bash'
+            scriptLocation: 'inlineScript'
+            inlineScript: |
+              terraform -version
+              terraform apply -auto-approve
