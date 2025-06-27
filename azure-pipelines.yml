@@ -69,6 +69,10 @@ stages:
           inputs:
             artifact: 'terraform-artifacts'
             path: '$(System.DefaultWorkingDirectory)'
+        - script: |
+            chmod -R +x .terraform/providers
+          displayName: 'Fix provider binary permissions'
+          workingDirectory: '$(System.DefaultWorkingDirectory)'
         - task: TerraformInstaller@1
           displayName: 'Install Terraform'
           inputs:
